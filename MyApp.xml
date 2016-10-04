@@ -1,0 +1,1350 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+  <ModulePrefs title="Star Wars: Edge of the Empire App">
+    <Require feature="rpc"/>
+    <Require feature="views"/>
+  </ModulePrefs>
+  <Content type="html">
+    <![CDATA[
+      <script src="//plus.google.com/hangouts/_/api/v1/hangout.js"></script>
+        <script type="text/javascript" src="//www.google.com/jsapi"></script>
+<html><head>
+<script>
+var versionNumber = 375;
+console.log("API Ready v" + versionNumber)
+</script>
+<script src="https://rawgit.com/davidaking87/StarWarsDevelopment/master/CharacterSheet/calcDice.js"></script>
+<script src="https://rawgit.com/davidaking87/StarWarsDevelopment/master/CharacterSheet/rollDice.js"></script>
+<script src="https://rawgit.com/davidaking87/StarWarsDevelopment/master/CharacterSheet/Classes.js"></script>
+<script src="https://rawgit.com/davidaking87/StarWarsDevelopment/master/CharacterSheet/ScreenControl.js"></script>
+<script src="https://rawgit.com/davidaking87/StarWarsDevelopment/master/CharacterSheet/DiceImage.js"></script>
+<script src="https://rawgit.com/davidaking87/StarWarsDevelopment/master/CharacterSheet/stateChanges.js"></script>
+<script src="https://rawgit.com/davidaking87/StarWarsDevelopment/master/CharacterSheet/GMFunctions.js"></script>
+<script src="https://rawgit.com/davidaking87/StarWarsDevelopment/master/CharacterSheet/SaveLoad.js"></script>
+</head>
+
+<body>
+<script>
+//Start State Change
+
+gapi.hangout.data.onStateChanged.add(function() {
+	if(gapi.hangout.isApiReady()){
+	  	console.log(gapi.hangout.data.getState());
+	  	var PlayerListArrayLocal = gapi.hangout.data.getValue('PlayerListArray')
+	  	if(PlayerListArrayLocal != null)
+	  	{
+  			var PlayerListArray = JSON.parse(PlayerListArrayLocal);
+  			updateMain(PlayerListArray);
+  		}
+	  	var tempGMID = gapi.hangout.data.getValue('GMID');
+	  	if(LocalGMID != tempGMID);
+	  	{
+  			if(tempGMID != null)
+  			{
+  				LocalGMID = tempGMID;
+  				if(tempGMID == LocalPlayerList.playerID)
+  				{
+  					console.log("You are the GM");
+  				}
+  				else{
+  					  document.getElementById('GMScreen').style.visibility = 'hidden';
+  					  document.getElementById('Main').style.visibility = 'visible';
+  					  document.getElementById('GMScreenButton').style.visibility = 'hidden';
+  				}
+  			}
+  		}
+  	}
+});
+
+function addPeople(){
+	gapi.hangout.onParticipantsEnabled.add(
+	function(eventObj) {
+		console.log("Someone Joined!");
+	});
+}
+
+function peopleChange(){
+	gapi.hangout.onParticipantsDisabled.add(
+	function(eventObj) {
+		console.log("Someone Disabled");
+		removeParticipants(eventObj.disabledParticipants);
+	});
+}
+function removeParticipants(participants){
+	console.log("Someone has Disconnected");
+	
+	var tempGMID = gapi.hangout.data.getValue('GMID');
+	console.log("tempGMID: " + tempGMID);
+	
+	var myParticipant = gapi.hangout.getLocalParticipant();
+	var temp1 =  myParticipant.person.id;
+	console.log("myID: " + temp1);
+	
+	if(tempGMID == temp1){
+		console.log("Disconnect: You are the GM!");
+		var i, d;
+		var v = gapi.hangout.data.getValue('PlayerListArray');
+		var x = -1;
+		if(v != null){
+			var PlayerListArrayLocal = JSON.parse(v);
+			var l = participants.length;
+			var k = PlayerListArrayLocal.length;
+			for(i = 0; i < k; ++i){
+				for(d = 0; d < l; ++d){
+					if(PlayerListArrayLocal[i].playerID == participants[d].person.id)
+					{
+						x = i;
+					}
+				}
+			}
+		}
+		if(x >= 0){
+			PlayerListArrayLocal.splice(x,1);
+			gapi.hangout.data.submitDelta({PlayerListArray: JSON.stringify(PlayerListArrayLocal)});
+		}
+		console.log("GM Removed Player");
+	}
+	else{
+		console.log("Disconnect: Not the GM");
+	}
+};
+
+//end state change
+</script>
+
+
+
+
+
+<script>
+
+
+
+function rollForceFav(){
+	console.log("Roll Force Started");
+	var forceRollTemp = forceRoll; 
+	console.log("ForceRollTemp: " + forceRollTemp);
+	var light = 0;
+	var dark = 0;
+
+	var dice = 0;
+	var x = document.getElementById("ForceDieNumFav").value;
+	for (i = 0; i < x; ++i){
+		dice = Math.floor((Math.random() * 12) + 1);
+		if (dice == 1){
+			dark += 1;
+		}
+		else if (dice == 2){
+			dark += 1;
+		}				
+		else if (dice == 3){
+			dark += 1;
+		}
+		else if (dice == 4){
+			dark += 1;
+		}
+		else if (dice == 5){
+			dark += 1;
+		}
+		else if (dice == 6){
+			dark += 1;
+		}
+		else if (dice == 7){
+			dark += 2;
+		}
+		else if (dice == 8){
+			light += 1;
+		}
+		else if (dice == 9){
+			light += 1;
+		}
+		else if (dice == 10){
+			light += 2;
+		}
+		else if (dice == 11){
+			light += 2;
+		}
+		else if (dice == 12){
+			light += 2;
+		}
+	}
+	
+	
+	forceRollTemp.light = light;
+	forceRollTemp.dark = dark;
+	
+	
+	
+	
+	
+	
+	var tempA, playerNum;
+	var tempB = LocalPlayerList.playerID;
+	var d;
+	var PlayerListArrayLocal = gapi.hangout.data.getValue('PlayerListArray');
+	PlayerListArrayLocal = JSON.parse(PlayerListArrayLocal);
+	length = PlayerListArrayLocal.length;
+	for(d = 0; d < length; d++){
+		tempA = PlayerListArrayLocal[d].playerID;
+		if(tempA == tempB){
+			playerNum = d;
+		}
+	}
+
+	PlayerListArrayLocal[playerNum].lastForceRoll = forceRollTemp;
+	gapi.hangout.data.submitDelta({PlayerListArray: JSON.stringify(PlayerListArrayLocal)});
+}
+
+
+
+
+
+
+
+
+
+//Skill Checks*************************************************************************************
+function rollAstrogationFav(){
+	showResultsFav(rollSkillCheckFav(Character.astrogationSkill, Character.intellect), rollDifficultyCheckFav(), 'Astrogation');
+}
+function rollAthleticsFav(){
+	showResultsFav(rollSkillCheckFav(Character.athleticsSkill, Character.brawn), rollDifficultyCheckFav(), 'Athletics');
+}
+function rollCharmFav(){
+	showResultsFav(rollSkillCheckFav(Character.charmSkill, Character.presence), rollDifficultyCheckFav(), 'Charm');
+}
+function rollCoercionFav(){
+	showResultsFav(rollSkillCheckFav(Character.coercionSkill, Character.willpower), rollDifficultyCheckFav(), 'Coercion');
+}
+function rollComputersFav(){
+	showResultsFav(rollSkillCheckFav(Character.computersSkill, Character.intellect), rollDifficultyCheckFav(), 'Computers');
+}
+function rollCoolFav(){
+	showResultsFav(rollSkillCheckFav(Character.coolSkill, Character.presence), rollDifficultyCheckFav(), 'Cool');
+}
+function rollCoordinationFav(){
+	showResultsFav(rollSkillCheckFav(Character.coordinationSkill, Character.agility), rollDifficultyCheckFav(), 'Coordination');
+}
+function rollDeceptionFav(){
+	showResultsFav(rollSkillCheckFav(Character.deceptionSkill, Character.cunning), rollDifficultyCheckFav(), 'Deception');
+}
+function rollDisciplineFav(){
+	showResultsFav(rollSkillCheckFav(Character.disciplineSkill, Character.willpower), rollDifficultyCheckFav(), 'Discipline');
+}
+function rollLeadershipFav(){
+	showResultsFav(rollSkillCheckFav(Character.leadershipSkill, Character.presence), rollDifficultyCheckFav(), 'Leadership');
+}
+function rollMechanicsFav(){
+	showResultsFav(rollSkillCheckFav(Character.mechanicsSkill, Character.intellect), rollDifficultyCheckFav(), 'Mechanics');
+}
+function rollMedicineFav(){
+	showResultsFav(rollSkillCheckFav(Character.medicineSkill, Character.intellect), rollDifficultyCheckFav(), 'Medicine');
+}
+function rollNegotiationFav(){
+	showResultsFav(rollSkillCheckFav(Character.negotiationSkill, Character.presence), rollDifficultyCheckFav(), 'Negotiation');
+}
+function rollPerceptionFav(){
+	showResultsFav(rollSkillCheckFav(Character.perceptionSkill, Character.cunning), rollDifficultyCheckFav(), 'Perception');
+}
+function rollPilotingPFav(){
+	showResultsFav(rollSkillCheckFav(Character.pilotingPSkill, Character.agility), rollDifficultyCheckFav(), 'PilotingP');
+}
+function rollPilotingSFav(){
+	showResultsFav(rollSkillCheckFav(Character.pilotingSSkill, Character.agility), rollDifficultyCheckFav(), 'PilotingS');
+}
+function rollResilienceFav(){
+	showResultsFav(rollSkillCheckFav(Character.resilienceSkill, Character.brawn), rollDifficultyCheckFav(), 'Resilience');
+}
+function rollSkulduggeryFav(){
+	showResultsFav(rollSkillCheckFav(Character.skulduggerySkill, Character.cunning), rollDifficultyCheckFav(), 'Skulduggery');
+}
+function rollStealthFav(){
+	showResultsFav(rollSkillCheckFav(Character.stealthSkill, Character.agility), rollDifficultyCheckFav(), 'Stealth');
+}
+function rollStreetwiseFav(){
+	showResultsFav(rollSkillCheckFav(Character.streetwiseSkill, Character.cunning), rollDifficultyCheckFav(), 'Streetwise');
+}
+function rollSurvivalFav(){
+	showResultsFav(rollSkillCheckFav(Character.survivalSkill, Character.cunning), rollDifficultyCheckFav(), 'Survival');
+}
+function rollVigilanceFav(){
+	showResultsFav(rollSkillCheckFav(Character.vigilanceSkill, Character.willpower), rollDifficultyCheckFav(), 'Vigilance');
+}
+function rollBrawlFav(){
+	showResultsFav(rollSkillCheckFav(Character.brawlSkill, Character.brawn), rollDifficultyCheckFav(), 'Brawl');
+}
+function rollGunneryFav(){
+	showResultsFav(rollSkillCheckFav(Character.gunnerySkill, Character.agility), rollDifficultyCheckFav(), 'Gunnery');
+}
+function rollLightsaberFav(){
+	showResultsFav(rollSkillCheckFav(Character.lightsaberSkill, Character.lightsaberStat), rollDifficultyCheckFav(), 'Lightsaber');
+}
+function rollMeleeFav(){
+	showResultsFav(rollSkillCheckFav(Character.meleeSkill, Character.brawn), rollDifficultyCheckFav(), 'Melee');
+}
+function rollRangedLFav(){
+	showResultsFav(rollSkillCheckFav(Character.rangedLSkill, Character.agility), rollDifficultyCheckFav(), 'RangedL');
+}
+function rollRangedHFav(){
+	showResultsFav(rollSkillCheckFav(Character.rangedHSkill, Character.agility), rollDifficultyCheckFav(), 'RangedH');
+}
+function rollCoreWorldsFav(){
+	showResultsFav(rollSkillCheckFav(Character.coreWorldsSkill, Character.intellect), rollDifficultyCheckFav(), 'Core Worlds');
+}
+function rollEducationFav(){
+	showResultsFav(rollSkillCheckFav(Character.educationSkill, Character.intellect), rollDifficultyCheckFav(), 'Education');
+}
+function rollLoreFav(){
+	showResultsFav(rollSkillCheckFav(Character.loreSkill, Character.intellect), rollDifficultyCheckFav(), 'Lore');
+}
+function rollOuterRimFav(){
+	showResultsFav(rollSkillCheckFav(Character.outerRimSkill, Character.intellect), rollDifficultyCheckFav(), 'Outer Rim');
+}
+function rollUnderworldFav(){
+	showResultsFav(rollSkillCheckFav(Character.underworldSkill, Character.intellect), rollDifficultyCheckFav(), 'Underworld');
+}
+function rollXenologyFav(){
+	showResultsFav(rollSkillCheckFav(Character.xenologySkill, Character.intellect), rollDifficultyCheckFav(), 'Xenology');
+}
+	
+function showResultsFav(skillArray, difficultyArray, RollName){
+  var TotalSuccess = skillArray[0] - difficultyArray[0];
+  var TotalAdvantage = skillArray[1] - difficultyArray[1];
+  var TotalTriumph = skillArray[2] - difficultyArray[2];
+
+  updateMainRoll(TotalSuccess, TotalAdvantage, TotalTriumph, RollName);
+}
+
+function rollSkillCheckFav(skillValue, statValue){
+	skillValue = Number(skillValue);
+	statValue = Number(statValue);
+	var highVal, lowVal, greenDie, yellowDie;
+	var success = 0; 
+	var advantage= 0;
+	var triumph = 0;
+	var i = 0;
+	var temp1 = 0;
+	
+	if(document.getElementById("UpgradeDieNumFav").value){
+		temp1 = document.getElementById("UpgradeDieNumFav").value;
+	}
+	
+	for(i = 0; i < temp1; i++){
+		if(skillValue < statValue){
+			skillValue = skillValue + 1;
+		}
+		else{
+			statValue = statValue + 1;
+		}
+	}
+
+	if(skillValue >= statValue){
+		highVal = skillValue;
+		lowVal = statValue;
+	}
+	else{
+		highVal = statValue;
+		lowVal = skillValue;
+	}
+	yellowDie = lowVal;
+	greenDie = highVal - lowVal;
+	
+	var array1 = rollAbilityDie(greenDie);
+	var array2 = rollProficiencyDie(yellowDie);
+	var array3 = rollBoostDie(document.getElementById("BoostDieNumFav").value);
+	success = array1[0] + array2[0] + array3[0];
+	advantage = array1[1] + array2[1] + array3[1];
+	triumph = array2[2];
+	return [success, advantage, triumph];
+}
+
+function rollDifficultyCheckFav(){
+	arrayd1 = rollDifficultyDie(document.getElementById("DifficultyDieNumFav").value);
+	arrayd2 = rollChallangeDie(document.getElementById("ChallengeDieNumFav").value);
+	arrayd3 = rollSetbackDie(document.getElementById("SetbackDieNumFav").value);
+	var failure = arrayd1[0]+arrayd2[0]+arrayd3[0];
+	var threat = arrayd1[1] + arrayd2[1]+arrayd3[1];
+	var despair = arrayd2[2];
+	return[failure, threat, despair];
+}
+
+
+
+
+function rollAstrogation(){
+	showResults(rollSkillCheck(Character.astrogationSkill, Character.intellect), rollDifficultyCheck(), 'Astrogation');
+	document.getElementById('SkillRollType').innerHTML = "Astrogation Roll";
+}
+
+function rollAthletics(){
+	showResults(rollSkillCheck(Character.athleticsSkill, Character.brawn), rollDifficultyCheck(), 'Athletics');
+  	document.getElementById('SkillRollType').innerHTML = "Athletics Roll";
+}
+
+function rollCharm(){
+	showResults(rollSkillCheck(Character.charmSkill, Character.presence), rollDifficultyCheck(), 'Charm');
+	document.getElementById('SkillRollType').innerHTML = "Charm Roll";
+}
+
+function rollCoercion(){
+	showResults(rollSkillCheck(Character.coercionSkill, Character.willpower), rollDifficultyCheck(), 'Coercion');
+	document.getElementById('SkillRollType').innerHTML = "Coercion Roll";	
+}
+
+function rollComputers(){
+	showResults(rollSkillCheck(Character.computersSkill, Character.intellect), rollDifficultyCheck(), 'Computers');
+	document.getElementById('SkillRollType').innerHTML = "Computers Roll";	
+}
+
+function rollCool(){
+	showResults(rollSkillCheck(Character.coolSkill, Character.presence), rollDifficultyCheck(), 'Cool');
+	document.getElementById('SkillRollType').innerHTML = "Cool Roll";	
+}
+
+function rollCoordination(){
+	showResults(rollSkillCheck(Character.coordinationSkill, Character.agility), rollDifficultyCheck(), 'Coordination');
+	document.getElementById('SkillRollType').innerHTML = "Coordination Roll";	
+}
+
+function rollDeception(){
+	showResults(rollSkillCheck(Character.deceptionSkill, Character.cunning), rollDifficultyCheck(), 'Deception');
+	document.getElementById('SkillRollType').innerHTML = "Deception Roll";
+}
+
+function rollDiscipline(){
+	showResults(rollSkillCheck(Character.disciplineSkill, Character.willpower), rollDifficultyCheck(), 'Discipline');
+	document.getElementById('SkillRollType').innerHTML = "Discipline Roll";	
+}
+
+function rollLeadership(){
+	showResults(rollSkillCheck(Character.leadershipSkill, Character.presence), rollDifficultyCheck(), 'Leadership');
+	document.getElementById('SkillRollType').innerHTML = "Leadership Roll";	
+}
+
+function rollMechanics(){
+	showResults(rollSkillCheck(Character.mechanicsSkill, Character.intellect), rollDifficultyCheck(), 'Mechanics');
+	document.getElementById('SkillRollType').innerHTML = "Mechanics Roll";		
+}
+
+function rollMedicine(){
+	showResults(rollSkillCheck(Character.medicineSkill, Character.intellect), rollDifficultyCheck(), 'Medicine');
+	document.getElementById('SkillRollType').innerHTML = "Medicine Roll";	
+}
+
+function rollNegotiation(){
+	showResults(rollSkillCheck(Character.negotiationSkill, Character.presence), rollDifficultyCheck(), 'Negotiation');
+	document.getElementById('SkillRollType').innerHTML = "Negotiation Roll";	
+}
+
+function rollPerception(){
+	showResults(rollSkillCheck(Character.perceptionSkill, Character.cunning), rollDifficultyCheck(), 'Perception');
+	document.getElementById('SkillRollType').innerHTML = "Perception Roll";
+}
+
+function rollPilotingP(){
+	showResults(rollSkillCheck(Character.pilotingPSkill, Character.agility), rollDifficultyCheck(), 'PilotingP');
+	document.getElementById('SkillRollType').innerHTML = "Piloting(Planetary) Roll";
+}
+
+function rollPilotingS(){
+	showResults(rollSkillCheck(Character.pilotingSSkill, Character.agility), rollDifficultyCheck(), 'PilotingS');
+	document.getElementById('SkillRollType').innerHTML = "Piloting(Space) Roll";
+}
+
+function rollResilience(){
+	showResults(rollSkillCheck(Character.resilienceSkill, Character.brawn), rollDifficultyCheck(), 'Resilience');
+	document.getElementById('SkillRollType').innerHTML = "Resilience Roll";	
+}
+
+function rollSkulduggery(){
+	showResults(rollSkillCheck(Character.skulduggerySkill, Character.cunning), rollDifficultyCheck(), 'Skulduggery');
+	document.getElementById('SkillRollType').innerHTML = "Skulduggery Roll";	
+}
+
+function rollStealth(){
+	showResults(rollSkillCheck(Character.stealthSkill, Character.agility), rollDifficultyCheck(), 'Stealth');
+	document.getElementById('SkillRollType').innerHTML = "Stealth Roll";
+}
+
+function rollStreetwise(){
+	showResults(rollSkillCheck(Character.streetwiseSkill, Character.cunning), rollDifficultyCheck(), 'Streetwise');
+	document.getElementById('SkillRollType').innerHTML = "Streetwise Roll";
+}
+
+function rollSurvival(){
+	showResults(rollSkillCheck(Character.survivalSkill, Character.cunning), rollDifficultyCheck(), 'Survival');
+	document.getElementById('SkillRollType').innerHTML = "Survival Roll";	
+}
+
+function rollVigilance(){
+	showResults(rollSkillCheck(Character.vigilanceSkill, Character.willpower), rollDifficultyCheck(), 'Vigilance');
+	document.getElementById('SkillRollType').innerHTML = "Vigilance Roll";		
+}
+
+function rollBrawl(){
+	showResults(rollSkillCheck(Character.brawlSkill, Character.brawn), rollDifficultyCheck(), 'Brawl');
+	document.getElementById('SkillRollType').innerHTML = "Brawl Roll";		
+}
+
+function rollGunnery(){
+	showResults(rollSkillCheck(Character.gunnerySkill, Character.agility), rollDifficultyCheck(), 'Gunnery');
+	document.getElementById('SkillRollType').innerHTML = "Gunnery Roll";	
+}
+
+function rollLightsaber(){
+	showResults(rollSkillCheck(Character.lightsaberSkill, Character.lightsaberStat), rollDifficultyCheck(), 'Lightsaber');
+	document.getElementById('SkillRollType').innerHTML = "Lightsaber Roll";		
+}
+
+function rollMelee(){
+	showResults(rollSkillCheck(Character.meleeSkill, Character.brawn), rollDifficultyCheck(), 'Melee');
+	document.getElementById('SkillRollType').innerHTML = "Melee Roll";		
+}
+
+function rollRangedL(){
+	showResults(rollSkillCheck(Character.rangedLSkill, Character.agility), rollDifficultyCheck(), 'RangedL');
+	document.getElementById('SkillRollType').innerHTML = "Ranged(Light) Roll";
+}
+
+function rollRangedH(){
+	showResults(rollSkillCheck(Character.rangedHSkill, Character.agility), rollDifficultyCheck(), 'RangedH');
+	document.getElementById('SkillRollType').innerHTML = "Ranged(Heavy) Roll";	
+}
+
+function rollCoreWorlds(){
+	showResults(rollSkillCheck(Character.coreWorldsSkill, Character.intellect), rollDifficultyCheck(), 'Core Worlds');
+	document.getElementById('SkillRollType').innerHTML = "Core Worlds Roll";	
+}
+
+function rollEducation(){
+	showResults(rollSkillCheck(Character.educationSkill, Character.intellect), rollDifficultyCheck(), 'Education');
+	document.getElementById('SkillRollType').innerHTML = "Education Roll";	
+}
+
+function rollLore(){
+	showResults(rollSkillCheck(Character.loreSkill, Character.intellect), rollDifficultyCheck(), 'Lore');
+	document.getElementById('SkillRollType').innerHTML = "Lore Roll";	
+}
+
+function rollOuterRim(){
+	showResults(rollSkillCheck(Character.outerRimSkill, Character.intellect), rollDifficultyCheck(), 'Outer Rim');
+	document.getElementById('SkillRollType').innerHTML = "Outer Rim Roll";	
+}
+
+function rollUnderworld(){
+	showResults(rollSkillCheck(Character.underworldSkill, Character.intellect), rollDifficultyCheck(), 'Underworld');
+	document.getElementById('SkillRollType').innerHTML = "Underworld Roll";	
+}
+
+function rollXenology(){
+	showResults(rollSkillCheck(Character.xenologySkill, Character.intellect), rollDifficultyCheck(), 'Xenology');
+	document.getElementById('SkillRollType').innerHTML = "Xenology Roll";	
+}
+
+function updateMainRoll(TotalSuccess, TotalAdvantage, TotalTriumph, RollName){
+	diceRoll.diceRollType = RollName;
+	diceRoll.diceRollSuccess = TotalSuccess;
+	diceRoll.diceRollAdvantage = TotalAdvantage;
+	diceRoll.diceRollTriumph = TotalTriumph;
+	
+	var tempA, playerNum;
+	var tempB = LocalPlayerList.playerID;
+	var d;
+	var PlayerListArrayLocal = gapi.hangout.data.getValue('PlayerListArray');
+	PlayerListArrayLocal = JSON.parse(PlayerListArrayLocal);
+	length = PlayerListArrayLocal.length;
+	for(d = 0; d < length; d++){
+		tempA = PlayerListArrayLocal[d].playerID;
+		if(tempA == tempB){
+			playerNum = d;
+		}
+	}
+	
+	PlayerListArrayLocal[playerNum].lastDiceRoll = diceRoll;
+	gapi.hangout.data.submitDelta({PlayerListArray: JSON.stringify(PlayerListArrayLocal)});
+}	
+	
+
+function showResults(skillArray, difficultyArray, RollName){
+  document.getElementById('SkillResultContainer').innerHTML = "";
+  var TotalSuccess = skillArray[0] - difficultyArray[0];
+  var TotalAdvantage = skillArray[1] - difficultyArray[1];
+  var TotalTriumph = skillArray[2] - difficultyArray[2];
+  var output = "";
+  var imgs = [];
+  var i = 0;
+  
+  updateMainRoll(TotalSuccess, TotalAdvantage, TotalTriumph, RollName);
+  
+  if(TotalSuccess >= 0){
+  	output = "Success: " + TotalSuccess;
+  	for(i = 0; i < TotalSuccess; ++i)
+  	{
+  		imgs.push(DiceImage.success);
+  	}
+  }
+  else{
+  	TotalSuccess = TotalSuccess * (-1);
+  	output = "Failure: " + TotalSuccess;
+  	for(i = 0; i < TotalSuccess; ++i){
+  		imgs.push(DiceImage.failure);
+  	}
+  }
+
+  if(TotalAdvantage >= 0){
+	output += "  |  Advantage: " + TotalAdvantage;
+	for(i = 0; i < TotalAdvantage; ++i){
+  		imgs.push(DiceImage.advantage);
+  	}
+  }
+  else{
+  	TotalAdvantage = TotalAdvantage * (-1);
+  	output += "  |  Threat: " + TotalAdvantage;
+  	for(i = 0; i < TotalAdvantage; ++i){
+  		imgs.push(DiceImage.threat);
+  	}
+  }  
+  if(TotalTriumph >= 0){
+  	output += "  |  Triumph: " + TotalTriumph;
+  	for(i = 0; i < TotalTriumph; ++i){
+  		imgs.push(DiceImage.triumph);
+  	}
+  }
+  else{
+  	TotalTriumph = TotalTriumph * (-1);
+  	output += "  |  Despair: " + TotalTriumph;
+  	for(i = 0; i < TotalTriumph; ++i){
+  		imgs.push(DiceImage.despair);
+  	}
+  }
+    document.getElementById('RollResult1').innerHTML =  output;
+    var container = document.getElementById('SkillResultContainer');
+    var docFrag = document.createDocumentFragment();
+    var length = imgs.length;
+    for(i = 0; i < length; ++i){
+    	var tempImg = document.createElement('img');
+    	tempImg.src = imgs[i];
+    	docFrag.appendChild(tempImg);
+    }
+    container.appendChild(docFrag);
+}
+
+
+function rollSkillCheck(skillValue, statValue){
+	skillValue = Number(skillValue);
+	statValue = Number(statValue);
+	var highVal, lowVal, greenDie, yellowDie;
+	var success = 0; 
+	var advantage= 0;
+	var triumph = 0;
+	var i = 0;
+	var temp1 = 0;
+	if(document.getElementById("UpgradeDieNum").value){
+		temp1 = document.getElementById("UpgradeDieNum").value;
+	}
+
+	for(i = 0; i < temp1; i++){
+		if(skillValue < statValue){
+			skillValue = skillValue + 1;
+		}
+		else{
+			statValue = statValue + 1;
+		}
+	}
+	
+	if(skillValue >= statValue){
+		highVal = skillValue;
+		lowVal = statValue;
+	}
+	else{
+		highVal = statValue;
+		lowVal = skillValue;
+	}
+
+	yellowDie = lowVal;
+	greenDie = highVal - lowVal;
+	
+	var array1 = rollAbilityDie(greenDie);
+	var array2 = rollProficiencyDie(yellowDie);
+	var array3 = rollBoostDie(document.getElementById("BoostDieNum").value);
+	success = array1[0] + array2[0] + array3[0];
+	advantage = array1[1] + array2[1] + array3[1];
+	triumph = array2[2];
+
+	return [success, advantage, triumph];
+}
+
+
+function rollAbilityDie(dieNum)
+{
+	var success = 0;
+	var advantage = 0;
+	for (i = 0; i < dieNum; ++i){
+		dice = Math.floor((Math.random() * 8) + 1);
+		if (dice == 2){
+			success += 1;
+		}
+		else if (dice == 3){
+			success += 1;
+		}
+		else if (dice == 4){
+			success += 2;
+		}
+		else if (dice == 5){
+			advantage += 1;
+		}
+		else if (dice == 6){
+			advantage += 1;
+		}
+		else if (dice == 7){
+			success += 1;
+			advantage += 1;
+		}
+		else if (dice == 8){
+			advantage += 2;
+		}
+	}
+	return[success,advantage];
+}
+
+
+
+function rollProficiencyDie(dieNum)
+{
+	var success = 0;
+	var advantage = 0;
+	var triumph = 0;
+	for (i = 0; i < dieNum; ++i){
+		dice = Math.floor((Math.random() * 12) + 1);
+		if (dice == 2){
+			success += 1;
+		}
+		else if (dice == 3){
+			success += 1;
+		}
+		else if (dice == 4){
+			success += 2;
+		}
+		else if (dice == 5){
+			success += 2;
+		}
+		else if (dice == 6){
+			advantage += 1;
+		}
+		else if (dice == 7){
+			success += 1;
+			advantage += 1;
+		}
+		else if (dice == 8){
+			success += 1;
+			advantage += 1;
+		}
+		else if (dice == 9){
+			success += 1;
+			advantage += 1;
+		}
+		else if (dice == 10){
+			advantage += 2;
+		}
+		else if (dice == 11){
+			advantage += 2;					
+		}
+		else if (dice == 12){
+			triumph += 1;
+		}
+	}
+	return[success,advantage,triumph];
+}
+
+function rollBoostDie(dieNum)
+{
+	var success = 0;
+	var advantage = 0;
+	for (i = 0; i < dieNum; ++i){
+		dice = Math.floor((Math.random() * 6) + 1);
+		if (dice == 3){
+			success += 1;
+		}
+		else if (dice == 4){
+			success += 1;
+			advantage += 1;
+		}
+		else if (dice == 5){
+			advantage += 2;
+		}
+		else if (dice == 6){
+			advantage += 1;
+		}
+	}
+	return[success,advantage];
+}
+
+
+function rollDifficultyCheck(){
+	arrayd1 = rollDifficultyDie(document.getElementById("DifficultyDieNum").value);
+	arrayd2 = rollChallangeDie(document.getElementById("ChallengeDieNum").value);
+	arrayd3 = rollSetbackDie(document.getElementById("SetbackDieNum").value);
+
+	var failure = arrayd1[0]+arrayd2[0]+arrayd3[0];
+	var threat = arrayd1[1] + arrayd2[1]+arrayd3[1];
+	var despair = arrayd2[2];
+
+	return[failure, threat, despair];
+}
+
+function rollDifficultyDie(DifficultyDie){
+	var dice = 0;
+	var failure = 0;
+	var threat = 0;
+	for (i = 0; i < DifficultyDie; ++i){
+
+		dice = Math.floor((Math.random() * 6) + 1);
+		if (dice == 2){
+			failure += 1;
+		}
+		else if (dice == 3){
+			failure += 2;
+		}
+		else if (dice == 4){
+			threat += 1;
+		}
+		else if (dice == 5){
+			threat += 1;
+		}
+		else if (dice == 6){
+			threat += 1;
+		}
+		else if (dice == 7){
+			threat += 2;
+		}
+		else if (dice == 8){
+			failure += 1;
+			threat += 1;
+		}
+	}
+	return[failure, threat];
+}
+
+
+
+function rollChallangeDie(ChallangeDie)
+{
+	var dice = 0;
+	var failure = 0;
+	var threat = 0;
+	var despair = 0;
+	for (i = 0; i < ChallangeDie; ++i){
+		dice = Math.floor((Math.random() * 12) + 1);
+		if (dice == 2){
+			failure += 1;
+		}
+		else if (dice == 3){
+			failure += 1;
+		}
+		else if (dice == 4){
+			failure += 2;
+		}
+		else if (dice == 5){
+			failure += 2;
+		}
+		else if (dice == 6){
+			threat += 1;
+		}
+		else if (dice == 7){
+			threat += 1;
+		}
+		else if (dice == 8){
+			threat += 1;
+			failure += 1;
+		}
+		else if (dice == 9){
+			threat += 1;
+			failure += 1;
+		}
+		else if (dice == 10){
+			threat += 2;
+		}
+		else if (dice == 11){
+			threat += 2;
+		}
+		else if (dice == 12){
+			despair += 1;
+		}
+	}
+	return[failure, threat, despair];
+}
+
+function rollSetbackDie(SetbackDie)
+{
+	var dice = 0;
+	var failure = 0;
+	var threat = 0;
+	for (i = 0; i < SetbackDie; ++i){
+		dice = Math.floor((Math.random() * 6) + 1);
+		if (dice == 3){
+			failure += 1;
+		}
+		else if (dice == 4){
+			failure += 1;
+		}
+		else if (dice == 5){
+			threat +=2;
+		}
+		else if (dice == 6){
+			threat +=1;
+		}
+	}
+	return[failure, threat];
+}
+
+
+
+
+
+
+
+//Skill Checks**************************************************************************************
+</script>
+
+
+
+
+
+<script>
+
+function updateFavorites(){
+	console.log("Poof!");
+	var tempString = "";
+	if(document.getElementById("astrogationFav").checked == true){
+		tempString += '<button id="astrogationButtonFav" onclick="rollAstrogationFav()">Astrogation</button><br>'
+	}
+	if(document.getElementById("athleticsFav").checked == true){
+		tempString += '<button id="athleticsButtonFav" onclick="rollAthleticsFav()">Athletics</button><br>'
+	}
+	if(document.getElementById("charmFav").checked == true){
+		tempString += '<button id="charmButtonFav" onclick="rollCharmFav()">Charm</button><br>'
+	}	
+	if(document.getElementById("coercionFav").checked == true){
+		tempString += '<button id="coercionButtonFav" onclick="rollCoercionFav()">Coercion</button><br>'
+	}	
+	if(document.getElementById("computersFav").checked == true){
+		tempString += '<button id="computersButtonFav" onclick="rollComputersFav()">Computers</button><br>'
+	}	
+	if(document.getElementById("coolFav").checked == true){
+		tempString += '<button id="coolBauttonFav" onclick="rollCoolFav()">Computers</button><br>'
+	}	
+	if(document.getElementById("coordinationFav").checked == true){
+		tempString += '<button id="coordinationButtonFav" onclick="rollCoordinationFav()">Coordination</button><br>'
+	}	
+	if(document.getElementById("deceptionFav").checked == true){
+		tempString += '<button id="deceptionButtonFav" onclick="rolldeceptionFav()">Deception</button><br>'
+	}	
+	if(document.getElementById("disciplineFav").checked == true){
+		tempString += '<button id="disciplineButtonFav" onclick="rollDisciplineFav()">Discipline</button><br>'
+	}	
+	if(document.getElementById("leadershipFav").checked == true){
+		tempString += '<button id="leadershipButtonFav" onclick="rollLeadershipFav()">Leadership</button><br>'
+	}	
+	if(document.getElementById("mechanicsFav").checked == true){
+		tempString += '<button id="mechanicsButtonFav" onclick="rollMechanicsFav()">Mechanics</button><br>'
+	}
+	if(document.getElementById("medicineFav").checked == true){
+		tempString += '<button id="medicineButtonFav" onclick="rollMedicineFav()">Medicine</button><br>'
+	}
+	if(document.getElementById("negotiationFav").checked == true){
+		tempString += '<button id="negotiationButtonFav" onclick="rollNegotiationFav()">Negotiation</button><br>'
+	}	
+	if(document.getElementById("perceptionFav").checked == true){
+		tempString += '<button id="perceptionButtonFav" onclick="rollPerceptionFav()">Perception</button><br>'
+	}
+	if(document.getElementById("pilotingPFav").checked == true){
+		tempString += '<button id="pilotingPButtonFav" onclick="rollPilotingPFav()">Piloting Planetary</button><br>'
+	}
+	if(document.getElementById("pilotingSFav").checked == true){
+		tempString += '<button id="pilotingSButtonFav" onclick="rollPilotingSFav()">Piloting Space</button><br>'
+	}
+	if(document.getElementById("resilienceFav").checked == true){
+		tempString += '<button id="resilienceButtonFav" onclick="rollResilienceFav()">Resilience</button><br>'
+	}
+	if(document.getElementById("skulduggeryFav").checked == true){
+		tempString += '<button id="skulduggeryButtonFav" onclick="rollSkulduggeryFav()">Skulduggery</button><br>'
+	}
+	if(document.getElementById("stealthFav").checked == true){
+		tempString += '<button id="stealthButtonFav" onclick="rollStealthFav()">Stealth</button><br>'
+	}
+	if(document.getElementById("streetwiseFav").checked == true){
+		tempString += '<button id="streetwiseButtonFav" onclick="rollStreetwiseFav()">Streetwise</button><br>'
+	}
+	if(document.getElementById("survivalFav").checked == true){
+		tempString += '<button id="survivalButtonFav" onclick="rollSurvivalFav()">Survival</button><br>'
+	}
+	if(document.getElementById("vigilanceFav").checked == true){
+		tempString += '<button id="vigilanceButtonFav" onclick="rollVigilanceFav()">Vigilance</button><br>'
+	}
+	if(document.getElementById("brawlFav").checked == true){
+		tempString += '<button id="brawlButtonFav" onclick="rollBrawlFav()">Brawl</button><br>'
+	}
+	if(document.getElementById("gunneryFav").checked == true){
+		tempString += '<button id="gunneryButtonFav" onclick="rollGunneryFav()">Gunnery</button><br>'
+	}	
+	if(document.getElementById("lightsaberFav").checked == true){
+		tempString += '<button id="lightsaberButtonFav" onclick="rollLightsaberFav()">Lightsaber</button><br>'
+	}	
+	if(document.getElementById("meleeFav").checked == true){
+		tempString += '<button id="meleeButtonFav" onclick="rollMeleeFav()">Melee</button><br>'
+	}
+	if(document.getElementById("rangedLFav").checked == true){
+		tempString += '<button id="rangedLButtonFav" onclick="rollRangedLFav()">Ranged Light</button><br>'
+	}
+	if(document.getElementById("rangedHFav").checked == true){
+		tempString += '<button id="rangedHButtonFav" onclick="rollRangedHFav()">Ranged Heavy</button><br>'
+	}	
+	if(document.getElementById("coreWorldsFav").checked == true){
+		tempString += '<button id="coreWorldsButtonFav" onclick="rollCoreWorldsFav()">Disciplinen</button><br>'
+	}	
+	if(document.getElementById("educationFav").checked == true){
+		tempString += '<button id="educationButtonFav" onclick="rollEducationFav()">Education</button><br>'
+	}	
+	if(document.getElementById("loreFav").checked == true){
+		tempString += '<button id="loreButtonFav" onclick="rollLoreFav()">Lore</button><br>'
+	}	
+	if(document.getElementById("outerRimFav").checked == true){
+		tempString += '<button id="outerRimButtonFav" onclick="rollOuterRimFav()">Outer Rim</button><br>'
+	}	
+	if(document.getElementById("underworldFav").checked == true){
+		tempString += '<button id="underworldButtonFav" onclick="rollUnderworldFav()">Underworld</button><br>'
+	}	
+	if(document.getElementById("xenologyFav").checked == true){
+		tempString += '<button id="xenologyButtonFav" onclick="rollXenologyFav()">Xenology</button><br>'
+	}
+	document.getElementById('favoritesDiv').innerHTML = tempString;	
+}
+
+
+
+
+
+
+
+//*******************************************Starting UpdateMain.js*************************************************
+function updateStats(){
+	console.log("update stats called");
+	var d, playerNum;
+	
+	var PlayerListArrayLocal = gapi.hangout.data.getValue('PlayerListArray');
+	PlayerListArrayLocal = JSON.parse(PlayerListArrayLocal);
+	var length = PlayerListArrayLocal.length;
+	for(d = 0; d < length; d++){
+		tempA = PlayerListArrayLocal[d].playerID;
+		tempB = LocalPlayerList.playerID;
+		if(tempA == tempB){
+			playerNum = d;
+		}
+	}
+	
+	var temp1 = document.getElementById("inputWoundCurrent").value;
+	var temp2 = document.getElementById("inputStrainCurrent").value;
+	if(temp1 != null){
+		PlayerListArrayLocal[playerNum].woundCurrent = temp1;
+	}
+	if(temp2 != null){
+		PlayerListArrayLocal[playerNum].strainCurrent = temp2;
+	}
+	gapi.hangout.data.submitDelta({PlayerListArray: JSON.stringify(PlayerListArrayLocal)});
+}
+
+function updateMain(PlayerListArrayLocal)
+{
+	console.log("New Update Main Started");
+	var length, d, i;
+	length = PlayerListArrayLocal.length;
+	var playerNum = -1;
+	
+	//Find Player Number
+	for(d = 0; d < length; d++){
+		if(PlayerListArrayLocal[d].playerID == LocalPlayerList.playerID){
+			playerNum = d;
+		}
+	}
+	//If user is a player display their information first
+	if(playerNum >= 0){
+		document.getElementById('MainName').innerHTML = PlayerListArrayLocal[playerNum].characterName;
+    		document.getElementById('MainWounds').innerHTML = 'Wounds: <input type="text" id="inputWoundCurrent" style="width:30px; text-align:center;" maxlength="2"> /' + PlayerListArrayLocal[playerNum].woundThreshold;
+    		document.getElementById('inputWoundCurrent').value = PlayerListArrayLocal[playerNum].woundCurrent;
+    		document.getElementById('MainStrain').innerHTML = 'Strain: <input type="text" id="inputStrainCurrent" style="width:30px; text-align:center;" maxlength="2"> /' + PlayerListArrayLocal[playerNum].strainThreshold;
+    		document.getElementById('inputStrainCurrent').value = PlayerListArrayLocal[playerNum].strainCurrent;
+    		document.getElementById('MainRoll').innerHTML = "Last Roll: " + JSON.stringify(PlayerListArrayLocal[playerNum].lastDiceRoll);
+		document.getElementById('MainForceRoll').innerHTML = "Last Force Roll: " + JSON.stringify(PlayerListArrayLocal[playerNum].lastForceRoll);
+	}
+
+	var tempString1 = "";
+	for(i = 0; i < length; i++)
+	{
+		if(i != playerNum){
+			tempString1 += '<tr><td>'  + PlayerListArrayLocal[i].characterName + '</td>' +
+			'<td>Wounds:  ' + PlayerListArrayLocal[i].woundCurrent + '/' + PlayerListArrayLocal[i].woundThreshold + '</td>' +
+			'<td>Strain: ' + PlayerListArrayLocal[i].strainCurrent + '/' + PlayerListArrayLocal[i].strainThreshold + '</td></tr>' +
+			'<tr><td colspan="3">Last Roll: ' + JSON.stringify(PlayerListArrayLocal[i].lastDiceRoll) + '</td></tr>' +
+			'<tr><td colspan="3">Last Force Roll: ' + JSON.stringify(PlayerListArrayLocal[i].lastForceRoll) + '</td>' +
+			'</tr>';
+		}
+	}
+	document.getElementById('OtherCharacters').innerHTML = '<table style="width:100%">' + tempString1 + '</table>';
+};
+
+//*******************************************Ending UpdateMain.js*************************************************
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav id="nav" style="background-color:#00004d; position:absolute; left:0; top:0; height:100%; width:75px; float:left;">
+	<p><button id="MainScreenButton" onclick="showMain()" style="visibility:hidden;">Main</button></p>
+	<p><button id="SkillsScreenButton" onclick="showSkills()" style="visibility:hidden;">Skills</button></p>
+	<p><button id="DiceScreenButton" onclick="showDice()" style="visibility:hidden;">Dice</button></p>
+	<p><button id="CharacterScreenButton" onclick="showCharacter()" style="visibility:hidden;">Character</button></p>
+	<p><button id="GMScreenButton" onclick="showGM()" style="visiblity:hidden;">GM</button></p>
+	<p><button id="PreferencesButton" onclick="showPreferences()" style="visiblity:hidden;">Pref</button></p>
+</nav>
+
+<div id="GMScreen" style="height:600px; width:925px; background-color:#BEC6DD; position: absolute; top:0; left:75; visibility:hidden;">
+	<p><button id="gmButton" onclick="assignGM()">Claim GM status</button></p>
+	<p id="GMText">GM Text</p>
+</div>
+
+
+
+
+
+
+
+
+<div> Main should be here </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div id="Skills" style="height:600px; width:925px; background-color:#BEC6DD; position: absolute; top:0; left:75; visibility:hidden;">
+	<p id="SkillRollType">Skill Roll Type Will be Here</p>
+	<p id="SkillResultContainer">Dice Result Will Be Here</p>
+	
+	
+	<img src="https://raw.githubusercontent.com/davidaking87/StarWarsDevelopment/master/Images/plus.png" width="20" height="20">
+	<input type="text" id="UpgradeDieNum" value="0" style="width:20px">
+	
+	<img src="https://raw.githubusercontent.com/davidaking87/StarWarsDevelopment/master/Images/boost.png" width="20" height="20">
+	<input type="text" id="BoostDieNum" value="0" style="width:20px">	
+	
+	<img src="https://raw.githubusercontent.com/davidaking87/StarWarsDevelopment/master/Images/difficulty.png" width="20" height="20">
+	<input type="text" id="DifficultyDieNum" value="2" style="width:20px">
+	
+	<img src="https://rawgit.com/davidaking87/StarWarsDevelopment/master/Images/challenge.png" width="20" height="20">
+	<input type="text" id="ChallengeDieNum" value="2" style="width:20px">
+	
+	<img src="https://rawgit.com/davidaking87/StarWarsDevelopment/master/Images/setback.png" width="20" height="20">
+	<input type="text" id="SetbackDieNum" value="2" style="width:20px">
+	<p id="RollResult1"></p>
+	<table>
+		<tr>
+			<td><input type="checkbox" id="astrogationFav"><button id="astrogationButton" onclick="rollAthletics()">Astrogation</button></td>
+			<td><input type="checkbox" id="leadershipFav"><button id="leadershipButton" onclick="rollLeadership()">Leadership</button></td>
+			<td><input type="checkbox" id="stealthFav"><button id="stealthButton" onclick="rollStealth()">Stealth</button></td>
+			<td><input type="checkbox" id="rangedHFav"><button id="rangedHButton" onclick="rollRangedH()">Ranged(Heavy)</button></td>
+		</tr><tr>
+			<td><input type="checkbox" id="athleticsFav"></td>
+			<td><input type="checkbox" id="mechanicsFav"><button id="mechanicsButton" onclick="rollMechanics()">Mechanics</button></td>
+			<td><input type="checkbox" id="streetwiseFav"><button id="streetwiseButton" onclick="rollStreetwise()">Streetwise</button></td>
+			<td><input type="checkbox" id="coreWorldsFav"><button id="coreWorldsButton" onclick="rollCoreWorlds()">CoreWorlds</button></td>
+		</tr><tr>
+			<td><input type="checkbox" id="charmFav"><button id="charmButton" onclick="rollCharm()">Charm</button></td>
+			<td><input type="checkbox" id="medicineFav"><button id="medicineButton" onclick="rollMedicine()">Medicine</button></td>
+			<td><input type="checkbox" id="survivalFav"><button id="survivalButton" onclick="rollSurvival()">Survival</button></td>
+			<td><input type="checkbox" id="educationFav"><button id="educationButton" onclick="rollEducation()">Education</button></td>
+		</tr><tr>
+			<td><input type="checkbox" id="coercionFav"><button id="coercionButton" onclick="rollCoercion()">Coercion</button></td>
+			<td><input type="checkbox" id="negotiationFav"><button id="negotiationButton" onclick="rollNegotiation()">Negotiation</button></td>
+			<td><input type="checkbox" id="vigilanceFav"><button id="vigilanceButton" onclick="rollVigilance()">Vigilance</button></td>
+			<td><input type="checkbox" id="loreFav"><button id="loreButton" onclick="rollLore()">Lore</button></td>
+		</tr><tr>
+			<td><input type="checkbox" id="computersFav"><button id="computersButton" onclick="rollComputers()">Computers</button></td>
+			<td><input type="checkbox" id="perceptionFav"><button id="perceptionButton" onclick="rollPerception()">Perception</button></td>
+			<td><input type="checkbox" id="brawlFav"><button id="brawlButton" onclick="rollBrawl()">Brawl</button></td>
+			<td><input type="checkbox" id="outerRimFav"><button id="outerRimButton" onclick="rollOuterRim()">OuterRim</button></td>
+		</tr><tr>
+			<td><input type="checkbox" id="coolFav"><button id="coolButton" onclick="rollCool()">Cool</button></td>
+			<td><input type="checkbox" id="pilotingPFav"><button id="pilotingPButton" onclick="rollPilotingP()">PilotingP</button></td>
+			<td><input type="checkbox" id="gunneryFav"><button id="gunneryButton" onclick="rollGunnery()">Gunnery</button></td>
+			<td><input type="checkbox" id="underworldFav"><button id="underworldButton" onclick="rollUnderworld()">Underworld</button></td>
+		</tr><tr>
+			<td><input type="checkbox" id="coordinationFav"><button id="coordinationButton" onclick="rollCoordination()">Coordination</button></td>
+			<td><input type="checkbox" id="pilotingSFav"><button id="PilotingSButton" onclick="rollPilotingS()">PilotingS</button></td>
+			<td><input type="checkbox" id="lightsaberFav"><button id="LightsaberButton" onclick="rollLightsaber()">Lightsaber</button></td>
+			<td><input type="checkbox" id="xenologyFav"><button id="xenologyButton" onclick="rollXenology()">Xenology</button></td>
+		</tr><tr>
+			<td><input type="checkbox" id="deceptionFav"><button id="deceptionButton" onclick="rollDeception()">Deception</button></td>
+			<td><input type="checkbox" id="resilienceFav"><button id="resilienceButton" onclick="rollResilience()">Resilience</button></td>
+			<td><input type="checkbox" id="meleeFav"><button id="meleeButton" onclick="rollMelee()">Melee</button></td>
+		</tr><tr>
+			<td><input type="checkbox" id="disciplineFav"><button id="disciplineButton" onclick="rollDiscipline()">Discipline</button></td>
+			<td><input type="checkbox" id="skulduggeryFav"><button id="skulduggeryButton" onclick="rollSkulduggery()">Skulduggery</button></td>
+			<td><input type="checkbox" id="rangedLFav"><button id="rangedLButton" onclick="rollRangedL()">RangedL</button></td>
+		</tr>
+	</table>
+	<button id="updateFavorites" onclick="updateFavorites()">Update Favorites</button>
+</div>
+
+<div id="Dice" style="height:600px; width:925px; background-color:#BEC6DD; position: absolute; top:0; left:75; visibility:hidden;">
+	<p>This is the Dice Screen</p>
+	<p>Note: All dice results are private</p>
+	<p id="Success">Success: </p>
+	<p id="Advantage">Advantage</p>
+	<p id="Triumph">Triumph</p>
+	<p id="Light">Force(Light)</p>
+	<p id="Dark">Force(Dark)</p>
+	<br>
+	Boost Dice: <input type="text" id="boostDieNum" value="0"><br>
+	Setback Dice: <input type="text" id="setbackDieNum" value="0"><br>
+	Ability Dice: <input type="text" id="abilityDieNum" value="0"><br>
+	Difficulty Dice: <input type="text" id="difficiultyDieNum" value="0"><br>
+	Proficiency Dice: <input type="text" id="proficiencyDieNum" value="0"><br>
+	Challenge Dice: <input type="text" id="challengeDieNum" value="0"><br>
+	Force Dice: <input type="text" id="forceDieNum" value="0"><br>
+	<p><button id="button1" onclick="rollDice()">Roll The Dice</button></p>
+</div>
+
+
+
+
+<div id="Character" style="height:600px; width:925px; background-color:#BEC6DD; position: absolute; top:0; left:75; visibility:visible;">
+	<p><button id="calcDiceButton" onclick="calcDice()">Calc the Stats</button></p>
+	<p><button id="loadCharacter" onclick="loadCharacter()">Import Character</button><input type="text" id="loadCharacterInput" size="5"></p>
+	<p>Character Name: <input type="text" id="CharacterName" value="Bitchkylt" size="5">Player Name: <input type="text" id="PlayerName" value="Scott" size="5"></p>
+	<p>Soak: <input type="text" id="Soak" value="2" style="width:30px; text-align:center;" maxlength="2"></p>
+	<p>Wound Threshold/Current: <input type="text"id="WoundThreshold" value="12" style="width:30px; text-align:center;" maxlength="2"><input type="text"id="WoundCurrent" value="1" style="width:30px; text-align:center;" maxlength="2"></p>
+	<p>Strain Threshold/Current: <input type="text"id="StrainThreshold" value="9" style="width:30px; text-align:center;" maxlength="2"><input type="text"id="StrainCurrent" value="4" style="width:30px; text-align:center;" maxlength="2"></p>
+	<p>Ranged/Melee Defense<input type="text"id="RangedDefense" value="1" style="width:30px; text-align:center;" maxlength="2"><input type="text"id="MeleeDefense" value="2" style="width:30px; text-align:center;" maxlength="2"></p>
+
+	<p>
+	<form>Lightsaber Skill:<select>
+	<option id="LightsaberBrawn">Brawn</option>
+	<option id="LightsaberAgility">Agility</option>
+	<option id="LightsaberIntellect">Intellect</option>
+	<option id="LightsaberCunning">Cunning</option>
+	<option id="LightsaberWillpower">Willpower</option>
+	<option id="LightsaberPresence">Presence</option>
+	</select></form>
+	
+	<br>
+	<table>
+		<td>Brawn:<input type="text"id="Brawn" value="1" style="width:30px; text-align:center;" maxlength="2"></td>
+		<td>Agility:<input type="text"id="Agility" value="1" style="width:30px; text-align:center;" maxlength="2"></td>
+		<td>Intellect:<input type="text"id="Intellect" value="1" style="width:30px; text-align:center;" maxlength="2"></td>
+		<td>Cunning:<input type="text"id="Cunning" value="1" style="width:30px; text-align:center;" maxlength="2"></td>  		
+		<td>Willpower:<input type="text"id="Willpower" value="1" style="width:30px; text-align:center;" maxlength="2"></td>  		
+		<td>Presence:<input type="text"id="Presence" value="1" style="width:30px; text-align:center;" maxlength="2"></td>
+	</table>
+	<br>
+	<table>
+		<tr>
+			<td>Astrogation:<input type="text"id="Astrogation" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Leadership:<input type="text"id="Leadership" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Stealth:<input type="text"id="Stealth" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Ranged(Heavy):<input type="text"id="RangedH" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+		</tr><tr>
+			<td>Athletics:<input type="text"id="Athletics" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Mechanics:<input type="text"id="Mechanics" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Streetwise:<input type="text"id="Streetwise" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Core Worlds:<input type="text"id="CoreWorlds" value="2" style="width:30px; text-align:center;" maxlength="2"</td>
+		</tr><tr>
+			<td>Charm:<input type="text"id="Charm" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Medicine:<input type="text"id="Medicine" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Survival:<input type="text"id="Survival" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Education:<input type="text"id="Education" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+		</tr><tr>
+			<td>Coercion:<input type="text"id="Coercion" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Negotiation:<input type="text"id="Negotiation" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Vigilance:<input type="text"id="Vigilance" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Lore:<input type="text"id="Lore" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+		</tr><tr>
+			<td>Computers:<input type="text"id="Computers" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Perception:<input type="text"id="Perception" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Brawl:<input type="text"id="Brawl" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Outer Rim:<input type="text"id="OuterRim" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+		</tr><tr>
+			<td>Cool:<input type="text"id="Cool" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Piloting(Planetary):<input type="text"id="PilotingP" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Gunnery:<input type="text"id="Gunnery" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Underworld:<input type="text"id="Underworld" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+		</tr><tr>
+			<td>Cordination:<input type="text"id="Cordination" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Pioloting(Space):<ipnut type="number" id="PilotingS" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Lightsaber:<input type="text"id="Lightsaber" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Xenology:<input type="text"id="Xenology" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+		</tr><tr>
+			<td>Resilience:<input type="text"id="Resilience" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Deception:<input type="text"id="Deception" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Melee: <input type="text"id="Melee" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+		</tr><tr>
+			<td>Discipline:<input type="text"id="Discipline" value="2" style="width:30px; text-align:center;" maxlength="2"></td>
+			<td>Skulduggery:<input type="text"id="Skulduggery" value="2" style="width:30px; text-align:center;" maxlength="2"></td> 
+			<td>Ranged(Light):<input type="text"id="RangedL" value="2" style="width:30px; text-align:center;" maxlength="2"></td> 
+		</tr>
+	</table>
+</div>
+
+<div id="Preferences" style="height:600px; width:925px; background-color:#BEC6DD; position: absolute; top:0; left:75; visibility:hidden;">
+<p><button id="saveCharacterButton" onclick="saveCharacter()" style="visiblity:hidden;">Save Character</button></p>
+<p><input type="text" id="saveCharacterOutput" size="5"></p>
+</div>
+
+
+
+<script src="https://rawgit.com/davidaking87/StarWarsDevelopment/master/CharacterSheet/Startup.js"></script>
+</body></html>]]></Content></Module>
